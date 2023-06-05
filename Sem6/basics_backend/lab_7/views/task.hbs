@@ -1,0 +1,132 @@
+<a href="http://localhost:3000">Main Page</a>
+
+{{#if tasks}}
+  <script>
+    async function create() {
+      const description = document.getElementById('description').value;
+      const completed = document.getElementById('completed').value;
+      const user_id = document.getElementById('user_id').value;
+      const body = {
+        description: description,
+        completed: completed,
+        user_id: user_id
+      }
+
+      try {
+        await fetch(`http://localhost:3000/task`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+        .then(response => {
+          console.log(response)
+        })
+        .catch(error => {
+          console.log(error)
+        });
+      } catch (e) {
+        throw new Error(e)
+      }
+    }
+  </script>
+<p>Create new task:</p>
+  <p>description: <input  type="text" id="description" name="description" required/></p>
+  <p>completed: <input type="text" id="completed" name="completed" required/></p>
+  <p>user_id: <input type="text" id="user_id" name="user_id" required/></p>
+
+  <button onclick="create()">Submit edit</button>
+  <br>
+{{/if}}
+
+<br>
+{{#each tasks }}
+
+  <div>id: <a href="http://localhost:3000/task/{{_id}}">{{_id}}</a></div>
+  <div>description: {{description}}</div>
+  <div>completed: {{completed}}</div>
+  <div>user_id: <a href="http://localhost:3000/user/{{user_id}}">{{user_id}}</a></div>
+  <br>
+{{/each}}
+
+{{#task}}
+  <script>
+    async function edit() {
+      const id = document.getElementById('id').getAttribute('value');
+      const description = document.getElementById('description').value;
+      const completed = document.getElementById('completed').value;
+      const user_id = document.getElementById('user_id').getAttribute('value');
+      let body;
+      if (!user_id) {
+        body = {
+          _id: id,
+          description: description,
+          completed: completed,
+
+        }
+      } else {
+        body = {
+          _id: id,
+          description: description,
+          completed: completed,
+          user_id: user_id
+        }        
+      }
+
+      try {
+        fetch(`http://localhost:3000/task/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+        .then(response => {
+          console.log(response)
+        })
+        .catch(error => {
+          console.log(error)
+        });
+      } catch (e) {
+        throw new Error(e)
+      }
+    }
+  </script>
+
+  <script>
+    async function del() {
+     const id = document.getElementById('id').getAttribute('value');
+
+      try {
+        fetch(`http://localhost:3000/task/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => {
+          console.log(response)
+        })
+        .catch(error => {
+          console.log(error)
+        });
+      } catch (e) {
+        throw new Error(e)
+      }
+    }
+  </script>
+
+
+  <p id="id" value="{{_id}}">id: {{_id}}</p>
+  <p>description: <input  type="text" id="description" name="description" value={{description}} required/></p>
+  <p>completed: <input type="text" id="completed" name="completed" value={{completed}} required/></p>
+  <p id="user_id" value="{{user_id}}">user_id: <a href="http://localhost:3000/user/{{user_id}}">{{user_id}}</a></p>
+
+  <button onclick="edit()">Submit edit</button>
+  <form action="http://localhost:3000/task/" method="get" onsubmit="del()">
+    <input type="submit" value="Delete"/>
+  </form>
+  <br><br>
+  <a href="http://localhost:3000/task/">Get all tasks</a>
+{{/task}}

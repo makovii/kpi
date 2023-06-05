@@ -1,0 +1,30 @@
+{{#if response.data.location.name}}
+<div>
+  Whether in {{response.data.location.name}}
+</div>
+
+<table>
+  <tbody>
+    <tr>
+      <td>temperature by °C:</td>
+      <td>{{ response.data.current.temp_c }}</td>
+    </tr>
+    <tr>
+      <td>temperature by °F:</td>
+      <td>{{ response.data.current.temp_f }}</td>
+    </tr>
+    <tr>
+      <td>wind by k/h:</td>
+      <td>{{ response.data.current.wind_kph }}</td>
+    </tr>
+      <tr>
+      <td>weather condition:</td>
+      <td>{{ response.data.current.condition.text }}</td>
+    </tr>
+      <tr>
+      <td>wind directin:</td>
+      <td>{{ response.data.current.wind_dir }}</td>
+    </tr>
+  </tbody>
+</table>
+{{/if}}

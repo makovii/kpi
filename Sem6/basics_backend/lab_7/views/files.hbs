@@ -1,0 +1,13 @@
+<a href="http://localhost:3000">Main Page</a>
+<br>
+
+{{#if main.param }}
+  <a href="http://localhost:3000/img">To upload page</a>
+  <br>
+  {{main.message}}
+{{/if}}
+
+{{#each fileInfos}}
+  <div>url <a href="{{url}}">{{url}}</a></div>
+  <div>name: {{name}}</div>
+{{/each}}

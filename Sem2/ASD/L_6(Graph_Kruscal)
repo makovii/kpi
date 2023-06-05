@@ -1,0 +1,394 @@
+#include<windows.h>
+#include<math.h>
+#include<stdio.h>
+#include <stdlib.h>
+#include<conio.h>
+#define N 12
+#define PI 3.14159265
+
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+
+const wchar_t ProgName[] = L"Лабораторна робота 6";
+
+int A[N][N];
+int simA[N][N];
+int W[N][N];
+
+
+void matrixSim(int A[N][N], int* B[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (A[i][j]) {
+                B[j][i] = A[i][j];
+                B[i][j] = A[i][j];
+            }
+        }
+    }
+}
+
+//MATRIX GENERATION
+void generateMatrix(float k, int* matrixA[N][N], int* W[N][N]) {
+    srand(0520);
+
+    int B[N][N];
+    int C[N][N];
+    int D[N][N];
+    int Wt[N][N];
+
+    float num;
+    int element;
+    // A
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            num = (rand() / (float)RAND_MAX * 2) * k;
+            if (num < 1) element = 0;
+            else element = 1;
+            A[i][j] = element;
+        }
+    }
+
+    //Wt and B
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            num = roundf((rand() / (float)RAND_MAX * 2) * 100) * A[i][j];
+            Wt[i][j] = num;
+            if (num == 0) B[i][j] = 0;
+            else B[i][j] = 1;
+        }
+    }
+    //C+D
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (B[i][j] != B[j][i]) C[i][j] = 1;
+            else C[i][j] = 0;
+
+            if (B[i][j] == B[j][i] && B[i][j] == 1 && j <= i) D[i][j] = 1;
+            else D[i][j] = 0;
+        }
+    }
+    //ResultMatrix
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            Wt[i][j] = (C[i][j] + D[i][j]) * Wt[i][j];
+        }
+    }
+    matrixSim(Wt, W);
+}
+
+
+
+void drawVertex(HDC hdc, int xPos[N], int yPos[N], char* ellipseName[N], int i) {
+    int dtx = 5, radius = 16;
+    Ellipse(hdc, xPos[i] - radius, yPos[i] - radius, xPos[i] + radius, yPos[i] + radius);
+    TextOut(hdc, xPos[i] - dtx, yPos[i] - 8, ellipseName[i], 1);
+}
+
+
+struct stack {
+    int array[N];
+    int top;
+};
+
+struct stack* initStack() {
+    struct stack* stack = malloc(sizeof(struct stack));
+    stack->top = 0;
+    return stack;
+}
+
+void pushStack(struct stack* stack, int value) {
+    if (stack->top < N) {
+        stack->array[stack->top] = value;
+        stack->top++;
+    }
+}
+
+void flush(struct stack* stack) {
+    stack->top--;
+}
+
+int top(struct stack* stack) {
+    if (stack->top > 0)
+        return stack->array[stack->top - 1];
+    else return -1;
+}
+
+int isEmptyStack(struct stack* stack) {
+    if (stack->top == 0)
+        return 1;
+    else
+        return 0;
+}
+
+int DFS(int A[N][N], int start, int end) {//depth
+    int treeMatrix[N][N] = { 0 };
+    struct stack* s = initStack();
+    int visited[N] = { 0 };
+    int curVertex;
+    pushStack(s, start);
+    visited[start] = 1;
+    while (!isEmptyStack(s)) {
+        curVertex = top(s);
+        for (int i = 0; i < N; i++) {
+            if (A[curVertex][i]) {
+                if (i == end) return 1;
+                if (visited[i] == 0) {
+                    visited[i] = 1;
+                    treeMatrix[curVertex][i] = 1;
+                    pushStack(s, i);
+                    break;
+                }
+            }
+            if (i == N - 1) {
+                flush(s);
+            }
+        }
+    }
+    return 0;
+}
+
+
+int check(int start, int end, int A[N][N], int treeMatrix[N][N]) {
+
+    //int treeMatrix[N][N] = { 0 };
+    int queue[N] = { 0,0,0,0,0,0,0,0,0,0,0,0 };
+    int visited[N] = { 0 };
+    int item = 0;
+    queue[item] = end;
+    visited[queue[item]] = 1;
+    int count = 1;
+    int found = 0;
+
+    while (count != N) {
+        for (int i = 0; i < N; i++) {
+            if (A[queue[item]][i] > 0 && visited[i] == 0) {
+                if (treeMatrix[queue[item]][i] && i == start) return 1;
+                visited[i] = 1;
+
+                queue[count] = i;
+                count++;
+                found = 1;
+                //treeMatrix[queue[item]][i] = 1;
+
+                break;
+            }
+            else found = 0;
+        }
+        if (found == 0) item--;
+        else item++;
+    }
+    return 0;
+}
+
+int cycle(int start, int end, int visited[N], int A[N][N])
+{
+    if (start == end) return 1;
+    if (visited[start] && visited[end]) return 1;
+    return 0;
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
+{
+    HWND hWnd;
+    MSG lpMsg;
+    WNDCLASS w;
+
+    w.lpszClassName = ProgName;
+    w.hInstance = hInstance;
+    w.lpfnWndProc = WndProc;
+    w.hCursor = LoadCursor(NULL, IDC_ARROW);
+    w.hIcon = 0;
+    w.lpszMenuName = 0;
+    w.hbrBackground = COLOR_BTNFACE + 13;
+    w.style = CS_HREDRAW | CS_VREDRAW;
+    w.cbClsExtra = 0;
+    w.cbWndExtra = 0;
+
+    if (!RegisterClass(&w))
+        return 0;
+
+    hWnd = CreateWindow(ProgName,
+        L"LAB 6. Created d by Makoviy V.",
+        WS_OVERLAPPEDWINDOW,
+        600,
+        100,
+        700,
+        700,
+        (HWND)NULL,
+        (HMENU)NULL,
+        (HINSTANCE)hInstance,
+        (HINSTANCE)NULL);
+
+    ShowWindow(hWnd, nCmdShow);
+
+    while (GetMessage(&lpMsg, hWnd, 0, 0)) {
+        TranslateMessage(&lpMsg);
+        DispatchMessage(&lpMsg);
+    }
+    return(lpMsg.wParam);
+}
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
+{
+    HDC hdc;         // дескриптор проекту
+    PAINTSTRUCT ps;  // екземпляр структуры
+    // For Console
+    AllocConsole();
+    HANDLE stdHandle;
+    int hConsole;
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);
+
+
+    switch (messg) {
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &ps);
+        char* ellipseName[12] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C" };
+        int xPos[N];
+        int yPos[N];
+        int dx = 16, dy = 16, dtx = 5;  // R of Circle vertex and bias number
+        int R = 300;                    // R of Circle graph
+        int step = 0;  // step of vertex by circle
+        int Center1_X = 350, Center1_Y = 325;
+
+        HPEN BluePen = CreatePen(PS_SOLID, 2, RGB(50, 0, 255));
+        HPEN BlackPen = CreatePen(PS_SOLID, 1, RGB(20, 20, 5));
+        HPEN GreenPen = CreatePen(PS_SOLID, 1, RGB(41, 106, 72));
+        HPEN Dark_BluePen = CreatePen(PS_SOLID, 1, RGB(41, 106, 250));
+        HPEN Light_PurplePen = CreatePen(PS_SOLID, 1, RGB(232, 106, 250));
+        HPEN WitePen = CreatePen(PS_SOLID, 1, RGB(232, 246, 250));
+        HPEN REDPen = CreatePen(PS_SOLID, 1, RGB(250, 17, 37));
+
+        //vertex 
+        for (int vertex = 0; vertex < N; vertex++) {
+            xPos[vertex] = Center1_X + R * cos(step * PI / 180);
+            yPos[vertex] = Center1_Y - R * sin(step * PI / 180);
+            step += 360 / N;
+        }
+        int Pen[6] = { BlackPen, GreenPen, Dark_BluePen, Light_PurplePen, WitePen, REDPen };
+        int number = 0;
+
+        int radius = 16, divine = 1, xDif, yDif;
+        float koef;
+
+        generateMatrix(1.0 - 2 * 0.01 - 0 * 0.005 - 0.05, A, W);
+
+        for (int start = 0; start < N; start++) {
+            for (int end = start; end < N; end++) {
+
+                SelectObject(hdc, Pen[number]);
+
+                if (W[start][end]) {
+                    xDif = xPos[start] - xPos[end];
+                    yDif = yPos[start] - yPos[end];
+                    koef = sqrt(xDif * xDif + yDif * yDif) / radius;
+                    dx = xDif / koef;
+                    dy = yDif / koef;
+                    if (start == end) {
+                        MoveToEx(hdc, xPos[end], yPos[end], NULL);
+                        LineTo(hdc, xPos[end] + 40, yPos[end] + 10);
+                        LineTo(hdc, xPos[end] + 40, yPos[end] + 40);
+                        LineTo(hdc, xPos[end] + 10, yPos[end] + 40);
+                        LineTo(hdc, xPos[end], yPos[end]);
+                    }
+                    else if (W[start][end] > 0 && W[end][start] > 0) {
+                        MoveToEx(hdc, xPos[start], yPos[start], NULL);
+                        LineTo(hdc, xPos[end], yPos[end]);
+                        divine = -divine;
+                    }
+                }
+            }
+            if (number == 5) number = 0;
+            else number++;
+        }
+
+        SelectObject(hdc, BluePen);
+        for (int i = 0; i < N; i++) {
+            drawVertex(hdc, xPos, yPos, ellipseName, i);
+        }
+
+
+        //kruscal
+       
+        HPEN WitePen2 = CreatePen(PS_SOLID, 5, RGB(232, 246, 250));
+        SelectObject(hdc, WitePen2);
+        int treeMatrix[N][N] = { 0 };
+        int visitedVertex[N] = { 0 };
+        int coin = 0;
+        int count = 1;
+        int min = 1000;
+        int start, end;
+        char text[5];
+
+        printf_s("\nTree Matrix\n");
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                printf_s("%d ", W[i][j]);
+            }
+            printf_s("\n");
+        }
+
+        while (count < N ) {
+            min = 1000;
+            for (int i = 0; i < N; i++) {
+                for (int j = i; j < N; j++) {
+                    if ((W[i][j] > 0) && (W[i][j] < min)) {
+                        min = W[i][j];
+                        start = i;
+                        end = j;
+                    }
+                }
+            }
+            if (cycle(start, end, visitedVertex, treeMatrix) || DFS(treeMatrix, start, end)){
+               W[start][end] = 0;
+            }
+            else {
+                char text[5];
+                sprintf_s(text, sizeof(text), "%d", W[start][end]);
+                xDif = xPos[start] - xPos[end];
+                yDif = yPos[start] - yPos[end];
+
+                MoveToEx(hdc, xPos[end], yPos[end], NULL);
+ 
+                    LineTo(hdc, xPos[start], yPos[start]);
+                    TextOutA(hdc, xPos[end] + xDif / 2 - 20, yPos[end] + yDif / 2, text, W[start][end] < 100 ? 2 : 3);
+                
+
+                coin += min;
+                treeMatrix[start][end] = 1;
+                treeMatrix[end][start] = 1;
+                W[start][end] = 0;
+                visitedVertex[start] = 1;
+                visitedVertex[end] = 1;
+                count = 0;
+                for (int i = 0; i < N; i++) count += visitedVertex[i];
+
+                sprintf_s(text, sizeof(text), "%d", coin);
+                TextOutA(hdc, 5, 40, text, coin < 100 ? 2 : 3);
+                _getch();
+            }
+        }
+
+        printf_s("%d \n", coin);
+
+        printf_s("\nSceleton Matrix\n");
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                printf_s("%d ", treeMatrix[i][j]);
+            }
+            printf_s("\n");
+        }
+
+        EndPaint(hWnd, &ps);
+        break;
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+
+    default:
+        return(DefWindowProc(hWnd, messg, wParam, lParam));
+
+        return 0;
+        FreeConsole();
+    }
+}
