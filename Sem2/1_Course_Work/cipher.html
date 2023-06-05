@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>сipher_HUB</title>
+  <link rel="stylesheet" href="CSS/cipher.css">
+  <script src="JS/cipher.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1 align='center'>cipher <mark>hub</mark></h1>
+    <h3 id = 'motto' align='center'><q>In God we trust</q></h3>
+  </header>
+ 
+  <nav>
+    <ul>
+      <li><a href="cipher.html">Encrypt</a></li>
+      <li><a href="password.html">Password Generator</a></li>
+      <li><a href="chifrovanie.html">Register</a></li>
+    </ul>
+  </nav>
+
+  <input type='text', id='text_input', size="40">
+
+  <button id = "button" class = "button">Unicode</button>
+  <input id = 'asym_cipher' type = 'button' value = 'Asymmetrical cipher'>
+  <input id = 'asym_decryption' type = 'button' value = 'Asymmetrical decryption'>
+  <input id = 'get_history' type = 'button' value = 'History'>
+
+<form>
+  <div class = "text_history" id = "text_history"></div>
+</form>
+<br />
+<div class = "text_out" id = "text_out"></div>
+<div class = "unencrypt" id = "unencrypt"></div>
+
+<br /><br />
+<h3 id = 'open_inscription'>Your Open Key  </h3>
+<textarea id = "open_key_field" class = "open_key" autofocus></textarea>
+<div class = "asymmet_cipher" id = "asymmetrical_cipher"></div>
+<br />
+<h3 id = 'private_inscription'>Your Private Key  </h3>
+<textarea id = "private_key_field" class = "private_key" autofocus></textarea>
+<div class = "asymmet_decryption" id = "asymmetrical_decryption"></div>
+</body>
+</html>

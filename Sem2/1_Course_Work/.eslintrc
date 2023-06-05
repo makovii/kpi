@@ -1,0 +1,8 @@
+{
+  "globals": {
+    "BigInt":true,
+    "alert":true,
+    "navigator":true
+  },
+  "extends": ["airbnb/base"]
+}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>сipher_HUB</title>
+  <link rel="stylesheet" href="CSS/chifrovanie.css">
+  <script src="JS/encryption.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1 align='center'>cipher <mark>hub</mark></h1>
+    <h3 align='center'><q>In God we trust</q></h3>
+  </header>
+ 
+  <nav>
+    <ul>
+      <li><a href="cipher.html">Encrypt</a></li>
+      <li><a href="password.html">Password Generator</a></li>
+      <li><a href="chifrovanie.html">Register</a></li>
+    </ul>
+  </nav>
+  <h6 align='left'><q>Введите текст</q></h3>
+  <textarea id = "text_input" class = "text_input" autofocus></textarea>
+  <button id = "button" class = "button">Push to chifr</button>
+  <h6 align='left'><q>Введите зашифрованный тескт</q></h3>
+  <textarea id = "text_input1" class = "text_input" autofocus></textarea>
+  <h6 align='left'><q>Введите ключ</q></h3>
+  <textarea id = "key_input" class = "text_input" autofocus></textarea>
+  <button id="copyText">Copy text</button>
+  <button id="copyKey">Copy key</button>
+  
+  <p><b>Variants</b></p>
+    <p><input name="dzen" type="radio" value="raszashifrovat"> raszashifrovat</p>
+    <p><input name="dzen" type="radio" value="zashifrovat"> zashifrovat</p>
+<div class = "text_out" id = "text_out"></div>
+<div class = "text_out" id = "text_out1"></div>
+<div class = "unencrypt" id = "unencrypt"></div>
+</body>
+</html>
