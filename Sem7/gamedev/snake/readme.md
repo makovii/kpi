@@ -1,6 +1,6 @@
 # What is it ?
 
-This game implements the ancient game [Snake](https://en.wikipedia.org/wiki/Snake_(video_game_genre).
+This game implements the ancient game [Snake](https://en.wikipedia.org/wiki/Snake_(video_game_genre)) .
 
 ## Goal
 The goal was to create a simple game with all the basic features. This game is an example for those who have no experience in Unity, but still want to start.
