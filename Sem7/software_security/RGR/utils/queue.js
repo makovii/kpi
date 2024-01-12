@@ -2,6 +2,7 @@ class ChunkQueue {
   constructor() {
     this.queue = [];
     this.completedSend = 0;
+    this.portion = 0;
   }
 
   enqueue(chunk) {
@@ -23,6 +24,10 @@ class ChunkQueue {
 
   setMaxSend(maxSend) {
     this.maxSend = maxSend;
+  }
+
+  setPortionSend(portion) {
+    this.portion = portion;
   }
 }
 

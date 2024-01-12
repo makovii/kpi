@@ -98,11 +98,13 @@ const server = net.createServer((clientSocket) => {
 
       } else if (clientMessage.type === 'complete') {
         const message = decryptSync(masterSecret, Buffer.from(clientMessage.encryptedMessage.data), Buffer.from(clientMessage.encIv.data));
-        console.log("message from client:", message);
       } else if (clientMessage.type === 'file') {
-        const { filePath, chunkNumber, chunk, endOfFile, encryptedMessage, encIv } = JSON.parse(data);
-
-        chunkQueue.enqueue({ filePath, chunkNumber, chunk, endOfFile, encryptedMessage, encIv });
+        const { dataArray } = JSON.parse(data);
+        for (let i = 0; i < dataArray.length; i++) {
+          const { filePath, chunkNumber, chunk, endOfFile, encryptedMessage, encIv } = dataArray[i];
+          chunkQueue.enqueue({ filePath, chunkNumber, chunk, endOfFile, encryptedMessage, encIv });
+          processNextChunk(clientSocket, fileChunks, chunkQueue, maxConcurrency, masterSecret);
+        }
 
         // Start processing chunks
         processNextChunk(clientSocket, fileChunks, chunkQueue, maxConcurrency, masterSecret);

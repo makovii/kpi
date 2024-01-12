@@ -67,9 +67,10 @@ client.on('data', (data) => {
         { 
           filePath: './sendFiles/3.txt',
           fileName: "3.txt"
-        }];
+      }];
       const chunkQueue = new ChunkQueue();
       chunkQueue.setMaxSend(filePaths.length);
+      chunkQueue.setPortionSend(4);
 
       filePaths.forEach((filePathInfo) => {
         const fileStream = fs.createReadStream(filePathInfo.filePath);
@@ -106,10 +107,17 @@ function generatePremasterSecret() {
 
 async function sendChunks(client, chunkQueue) {
   if (!chunkQueue.isEmpty()) {
-    const { filePath, chunkNumber, chunk, endOfFile, type, encIv, encryptedMessage  } = chunkQueue.dequeue();
-    const message = JSON.stringify({ filePath, chunkNumber, chunk, endOfFile, type, encIv, encryptedMessage  });
-    console.log("message:", message);
-    client.write(message)
-    setTimeout( () => sendChunks(client, chunkQueue), 500)
+    const sendArray = []
+    for (let i = 0; i < chunkQueue.portion; i++) {
+
+      const info = chunkQueue.dequeue();
+      if (info) {
+        const { filePath, chunkNumber, chunk, endOfFile, type, encIv, encryptedMessage } = info;
+        sendArray.push({ filePath, chunkNumber, chunk, endOfFile, type, encIv, encryptedMessage });
+      }
+    }
+
+    client.write(JSON.stringify({ dataArray: sendArray, type: "file" }));
+    setTimeout(() => sendChunks(client, chunkQueue), 500);
   }
 }
