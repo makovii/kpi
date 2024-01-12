@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const generateMasterSecret = require('./utils/generateMasterSecret');
 const { decryptSync, encryptSync } = require('./utils/syncFunctions');
+const ChunkQueue = require('./utils/queue');
 
 // Example for generate keys and certificate
 // function generateKeys() {
@@ -58,48 +59,54 @@ const server = net.createServer((clientSocket) => {
   let masterSecret;
   
   // prepare for get file
-  const filePath = path.join(__dirname, 'received_message.txt');
-  const fileWriteStream = fs.createWriteStream(filePath);
+  const fileChunks = {};
+  const chunkQueue = new ChunkQueue();
+  const maxConcurrency = 3;  // Maximum number of files transmitted simultaneously
 
   clientSocket.on('data', (data) => {
+      console.log("new message: ")
+      const messages = data.toString().split('\n').filter((message) => message.trim() !== '');
+      console.log(messages);
       const clientMessage = JSON.parse(data);
   
-      if (clientMessage.message === "hello") {
+      if (clientMessage.type === "hello") {
         console.log("Hello from client: ", data.toString());
 
         const serverHello = {
-          message: 'hello',
+          type: 'hello',
           certificate: fs.readFileSync(path.join(__dirname, 'keys', 'server-certificate.pem')),
           publicKey: publicKey,
         };
         clientSocket.write(JSON.stringify(serverHello));
 
-      } else if (clientMessage.message === 'premaster') {
+      } else if (clientMessage.type === 'premaster') {
         const premaster = crypto.privateDecrypt(privateKey, Buffer.from(clientMessage.preMasterSecret));
         console.log("get premaster from client:", premaster);
 
         const label = 'master secret';
         const seed = Buffer.from('master secret', 'ascii');
-        const length = 32; // Довжина master secret у байтах
+        const length = 32; // Length master secret in bytes
         masterSecret = generateMasterSecret(premaster, label, seed, length);
 
         console.log("master secret in server:", masterSecret);
 
-        clientSocket.write(JSON.stringify({ message: 'ready' }));
+        clientSocket.write(JSON.stringify({ type: 'ready' }));
     
-      } else if (clientMessage.message === 'ready') {
+      } else if (clientMessage.type === 'ready') {
         const { iv: encIv, encrypted: encryptedMessage } = encryptSync(masterSecret, 'handshake is completed: said server');
-        clientSocket.write(JSON.stringify({ message: 'complete', encryptedMessage, encIv }));
+        clientSocket.write(JSON.stringify({ type: 'complete', encryptedMessage, encIv }));
 
-      } else if (clientMessage.message === 'complete') {
+      } else if (clientMessage.type === 'complete') {
         const message = decryptSync(masterSecret, Buffer.from(clientMessage.encryptedMessage.data), Buffer.from(clientMessage.encIv.data));
         console.log("message from client:", message);
-      } else if (clientMessage.message === 'file') {
-        fileWriteStream.write(clientMessage.chunk);
-      } else if (clientMessage.message === 'endFile') {
-        fileWriteStream.end();
-        console.log("file received");
-      }
+      } else if (clientMessage.type === 'file') {
+        const { filePath, chunkNumber, chunk, endOfFile, encryptedMessage, encIv } = JSON.parse(data);
+
+        chunkQueue.enqueue({ filePath, chunkNumber, chunk, endOfFile, encryptedMessage, encIv });
+
+        // Start processing chunks
+        processNextChunk(clientSocket, fileChunks, chunkQueue, maxConcurrency, masterSecret);
+      } 
   });
 
   clientSocket.on('end', () => {
@@ -111,3 +118,44 @@ const serverPort = 3000;
 server.listen(serverPort, () => {
   console.log(`Server listening on port ${serverPort}`);
 });
+
+
+function processNextChunk(clientSocket, fileChunks, chunkQueue, maxConcurrency, masterSecret) {
+  let currentConcurrency = 0;
+
+  if (currentConcurrency < maxConcurrency && !chunkQueue.isEmpty()) {
+      currentConcurrency++;
+
+      const { filePath, chunkNumber, endOfFile, encryptedMessage, encIv } = chunkQueue.dequeue();
+      // Check if the chunk indicates the end of file
+      if (endOfFile) {
+          // Write the accumulated chunks to the file
+          if (filePath in fileChunks) {
+              const accumulatedChunks = fileChunks[filePath][chunkNumber - 1] || [];
+              const message = decryptSync(masterSecret, Buffer.from(accumulatedChunks[0].encryptedMessage), Buffer.from(accumulatedChunks[0].encIv));
+
+              const filePathOnServer = path.join(__dirname, 'receiveFiles', filePath);
+              fs.writeFileSync(filePathOnServer, message);
+
+              // Signal the end of file transmission
+              delete fileChunks[filePath];
+          }
+
+          currentConcurrency--;
+          // Process the next chunk
+          processNextChunk(clientSocket, fileChunks, chunkQueue, maxConcurrency);
+      } else {
+          // Accumulate the chunks
+          if (!(filePath in fileChunks)) {
+              fileChunks[filePath] = {};
+          }
+          if (!(chunkNumber in fileChunks[filePath])) {
+              fileChunks[filePath][chunkNumber] = [];
+          }
+          fileChunks[filePath][chunkNumber].push({ encryptedMessage, encIv });
+
+          // Process the next chunk
+          processNextChunk(clientSocket, fileChunks, chunkQueue, maxConcurrency, masterSecret);
+      }
+  }
+}
